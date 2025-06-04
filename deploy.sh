@@ -1,23 +1,20 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-# Define variables
-APP_DIR="/var/www/html/dino-game"  #actual app directory
-REPO_BRANCH="main"  # Change if your branch is different
+echo "Starting deployment..."
 
-# Navigate to the application directory
-cd "$APP_DIR"
+cd ~/react-app || exit 1
 
-# Pull the latest changes from the repository
-git pull origin "$REPO_BRANCH"
+echo "Stopping existing container..."
+docker stop react-container || true
 
-# Install dependencies
-npm install
+echo "Removing existing container..."
+docker rm react-container || true
 
-# Build the React application for production
-npm run build
+echo "Building Docker image..."
+docker build -t react-app .
 
-# Restart Nginx to apply the changes
-sudo systemctl restart nginx
+echo "Running Docker container..."
+docker run -d -p 80:3000 --name react-container react-app
+
+echo "Deployment completed successfully!"
