@@ -1,4 +1,4 @@
-name: Deploy React App to EC2 with Docker (using deploy.sh)
+name: Deploy React App to EC2 with Docker 
 
 on:
   push:
@@ -12,22 +12,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Copy files to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          source: "."
-          target: "/home/${{ secrets.EC2_USER }}/react-app"
+      - name: Copy files to EC2 with scp
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/ec2_key.pem
+          chmod 600 ~/.ssh/ec2_key.pem
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key.pem -r . ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/react-app
 
-      - name: SSH and run deploy.sh
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          script: |
+      - name: SSH into EC2 and run deploy.sh
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/react-app
             chmod +x deploy.sh
             ./deploy.sh
+          EOF
